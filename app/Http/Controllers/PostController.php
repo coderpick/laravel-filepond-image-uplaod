@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\TemporaryFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -35,15 +37,16 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $file_name = $image->getClientOriginalName();
-            $folder = uniqid('post', true);
-            $image->storeAs('posts/tmp/'.$folder, $file_name);
+        $temp_file = TemporaryFile::where('folder', $request->image)->first();
+        if ($temp_file) {
+            Storage::copy('posts/tmp/'.$temp_file->folder.'/'.$temp_file->file, 'posts/'.$temp_file->folder.'/'.$temp_file->file);
+
             Post::create([
                 'title' => $request->title,
-                'image' => $folder.'/'.$file_name,
+                'image' => $temp_file->folder.'/'.$temp_file->file,
             ]);
+            Storage::deleteDirectory('posts/tmp/'.$temp_file->folder);
+            $temp_file->delete();
 
             return redirect('/')->with('success', 'Post Created');
         } else {
@@ -53,10 +56,20 @@ class PostController extends Controller
 
     public function tempUplaod(Request $request)
     {
-        $image = $request->file('image');
-        $file_name = $image->getClientOriginalName();
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $file_name = $image->getClientOriginalName();
+            $folder = uniqid('post', true);
+            $image->storeAs('posts/tmp/'.$folder, $file_name);
+            TemporaryFile::create([
+                'folder' => $folder,
+                'file' => $file_name,
+            ]);
 
-        return $file_name;
+            return $folder;
+        } else {
+            return '';
+        }
     }
 
     public function tempDelete()
