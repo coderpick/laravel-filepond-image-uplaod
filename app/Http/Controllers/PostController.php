@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\TemporaryFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class PostController extends Controller
 {
@@ -16,7 +17,9 @@ class PostController extends Controller
      */
     public function index()
     {
-        return view('post_create');
+        $posts = Post::all();
+
+        return view('post_create', compact('posts'));
     }
 
     /**
@@ -37,7 +40,19 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+        $validator = Validator::make($request->all(),[
+            'title' => 'required'
+        ]);
         $temp_file = TemporaryFile::where('folder', $request->image)->first();
+        if ($validator->fails() && $temp_file) {
+            Storage::deleteDirectory('posts/tmp/'.$temp_file->folder);
+            $temp_file->delete();
+            return redirect('/')->withErrors($validator)->withInput();
+
+        }elseif ($validator->fails()){
+            return redirect('/')->withErrors($validator)->withInput();
+        }
+
         if ($temp_file) {
             Storage::copy('posts/tmp/'.$temp_file->folder.'/'.$temp_file->file, 'posts/'.$temp_file->folder.'/'.$temp_file->file);
 
@@ -74,5 +89,11 @@ class PostController extends Controller
 
     public function tempDelete()
     {
+        $temp_file =TemporaryFile::where('folder',request()->getContent())->first();
+        if ($temp_file) {
+            Storage::deleteDirectory('posts/tmp/'.$temp_file->folder);
+            $temp_file->delete();
+            return response('');
+        }
     }
 }
