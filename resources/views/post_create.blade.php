@@ -61,7 +61,7 @@
             @foreach($posts as $key => $post)
                 <div class="col-8 col-sm-4 col-md-3">
                     <div class="card">
-                       <img src="" alt="" title="" />
+                       <img src="{{ Storage::disk('public')->url('posts/'.$post->image) }}" alt="" title="" />
                         <div class="card-body">
                             <h5 class="card-title">{{ $post->title }}</h5>
                         </div>
