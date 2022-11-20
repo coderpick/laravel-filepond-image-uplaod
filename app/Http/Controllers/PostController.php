@@ -40,27 +40,27 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(),[
-            'title' => 'required'
+        $validator = Validator::make($request->all(), [
+            'title' => 'required',
         ]);
         $temp_file = TemporaryFile::where('folder', $request->image)->first();
         if ($validator->fails() && $temp_file) {
             Storage::deleteDirectory('posts/tmp/'.$temp_file->folder);
             $temp_file->delete();
-            return redirect('/')->withErrors($validator)->withInput();
 
-        }elseif ($validator->fails()){
+            return redirect('/')->withErrors($validator)->withInput();
+        } elseif ($validator->fails()) {
             return redirect('/')->withErrors($validator)->withInput();
         }
 
         if ($temp_file) {
-            Storage::copy('posts/tmp/'.$temp_file->folder.'/'.$temp_file->file, 'posts/'.$temp_file->folder.'/'.$temp_file->file);
+            Storage::copy('public/posts/tmp/'.$temp_file->folder.'/'.$temp_file->file, 'public/posts/'.$temp_file->folder.'/'.$temp_file->file);
 
             Post::create([
                 'title' => $request->title,
                 'image' => $temp_file->folder.'/'.$temp_file->file,
             ]);
-            Storage::deleteDirectory('posts/tmp/'.$temp_file->folder);
+            Storage::deleteDirectory('public/posts/tmp/'.$temp_file->folder);
             $temp_file->delete();
 
             return redirect('/')->with('success', 'Post Created');
@@ -75,7 +75,7 @@ class PostController extends Controller
             $image = $request->file('image');
             $file_name = $image->getClientOriginalName();
             $folder = uniqid('post', true);
-            $image->storeAs('posts/tmp/'.$folder, $file_name);
+            $image->storeAs('public/posts/tmp/'.$folder, $file_name);
             TemporaryFile::create([
                 'folder' => $folder,
                 'file' => $file_name,
@@ -89,10 +89,11 @@ class PostController extends Controller
 
     public function tempDelete()
     {
-        $temp_file =TemporaryFile::where('folder',request()->getContent())->first();
+        $temp_file = TemporaryFile::where('folder', request()->getContent())->first();
         if ($temp_file) {
-            Storage::deleteDirectory('posts/tmp/'.$temp_file->folder);
+            Storage::deleteDirectory('public/posts/tmp/'.$temp_file->folder);
             $temp_file->delete();
+
             return response('');
         }
     }
